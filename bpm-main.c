@@ -5,24 +5,20 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-char version[] = "2.0.0";
+char version[] = "2.1.0";
 
 void updateLog() {
 	printf("BPM-BSC Official Update Log\n");
 	printf("Current Version: %s\n", version);
 	printf("-----------------------------\n");
-	printf("Update 2.0.0:\n");
-	printf("\tAdded package option with --list arg.\n");
-	printf("\tinstall option now works and installs commands.\n");
-	printf("\tremove option now works and removes packages.\n");
-	printf("\tupdate-log option now works and shows what is added in the most recent update.\n");
-	printf("\tAdded help command. 'bpm --help'\n");
+	printf("Update 2.1.0:\n");
+	printf("\tInstallation no longer requires login\n");
+	printf("\tPackages now installed from BPM-Repositories and not Bear-Package-Management\n");
 	return;
 }
 
 void helpCom() {
-	printf("BPM-BSC Official Help Page\n");
-	printf("Current Version: %s\n", version);
+	printf("BPM-BSC v%s Official Help Page\n", version);
 	printf("-----------------------------\n");
 	printf("BPM Usage: bpm <option> <package>\n");
 	printf("\tOptions:\n");
@@ -37,6 +33,10 @@ void helpCom() {
 	return;
 }
 
+void fullInstallPackage(char* package) {
+
+}
+
 int main(int argc, char *argv[]) {
 	char* option = argv[1];
 	char* packageToInstall = argv[2];
@@ -47,29 +47,34 @@ int main(int argc, char *argv[]) {
 	char op4[] = "package";
 	char op5[] = "update-log";
 	char op6[] = "--help";
+	char dontDownload[] = "BPM-Repositories";
 	char bla[70];
 	char bla2[70];
 	if (strcmp(option, op1) == 0) {
-		/*char packageRepo[] = "https://github.com/Bear-Package-Management/%s", packageToInstall;
-		char destinaton[] = "/usr/local/bpm-packages/%s", packageToInstall1;*/
-		snprintf(bla, sizeof(bla), "https://github.com/Bear-Package-Management/%s", packageToInstall);
+		char* token = getenv("API");
+		snprintf(bla, sizeof(bla), "https://%s@github.com/BPM-Repositories/%s.git", token, packageToInstall);
 		snprintf(bla2, sizeof(bla), "/usr/local/bpm-packages/%s", packageToInstall);
 		char* args[] = {"git", "clone", bla, bla2, NULL};
-
-		pid_t pid;
-		if ((pid = fork()) < 0) {     /* fork a child process           */
-			printf("*** ERROR: forking child process failed\n");
-			exit(1);
-		}
-		else if (pid == 0) {          /* for the child process:         */
-			if (execvp("git", args) < 0) {     /* execute the command  */
-				printf("*** ERROR: exec failed\n");
+		if (strcmp(packageToInstall, dontDownload) == 0) {
+			printf("[E]: You can't download this repository!\n");
+			printf("[E]: The repo '%s' is an admin repo!\n", packageToInstall);
+			return 0;
+		} else {
+			pid_t pid;
+			if ((pid = fork()) < 0) {     /* fork a child process           */
+				printf("[E]: forking child process failed\n");
 				exit(1);
 			}
-		}
-		else {                                  /* for the parent:      */
-			wait(&pid);
-			return 0;
+			else if (pid == 0) {          /* for the child process:         */
+				if (execvp("git", args) < 0) {     /* execute the command  */
+					printf("[E]: exec failed\n");
+					exit(1);
+				}
+			}
+			else {                                  /* for the parent:      */
+				wait(&pid);
+				return 0;
+			}
 		}
 	} else if (strcmp(option, op2) == 0) {
 		char* packageToRemove = argv[2];
@@ -78,18 +83,18 @@ int main(int argc, char *argv[]) {
 		char* args[] = {"rm", "-r", blaFoobar, NULL};
 		pid_t pid;
 		if ((pid = fork()) < 0) {
-			printf("*** ERROR: forking child process failed\n");
+			printf("[E]: forking child process failed\n");
 			exit(1);
 		}
 		else if (pid == 0) {
 			if (execvp("rm", args) < 0) {
-				printf("*** ERROR: exec failed\n");
+				printf("[E]: exec failed\n");
 				exit(1);
 			}
 		}
 		else {
 			wait(&pid);
-			printf("Successfully removed %s\n", packageToRemove);
+			printf("[O]: Successfully removed %s\n", packageToRemove);
 			return 0;
 		}
 	} else if (strcmp(option, op3) == 0) {
@@ -102,12 +107,12 @@ int main(int argc, char *argv[]) {
 			char* args[] = {"ls", "/usr/local/bpm-packages", NULL};
 			pid_t pid;
 			if ((pid = fork()) < 0) {
-				printf("*** ERROR: forking child process failed\n");
+				printf("[E]: forking child process failed\n");
 				exit(1);
 			}
 			else if (pid == 0) {
 				if (execvp("ls", args) < 0) {
-					printf("*** ERROR: exec failed\n");
+					printf("[E]: exec failed\n");
 					exit(1);
 				}
 			}
@@ -116,7 +121,7 @@ int main(int argc, char *argv[]) {
 				return 0;
 			}
 		} else {
-			printf("Not a sub-option for the option 'package'\n");
+			printf("[E]: Not a sub-option for the option 'package'\n");
 		}
 	} else if (strcmp(option, op5) == 0) {
 		updateLog();
@@ -125,7 +130,7 @@ int main(int argc, char *argv[]) {
 		helpCom();
 		return 0;
 	} else {
-		printf("Not a bpm command!\n");
+		printf("[E]: Not a bpm command!\n");
 	}
 	exit(EXIT_SUCCESS);
 }
