@@ -4,16 +4,23 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <curl/curl.h>
+#include <curl/easy.h>
+#include <stdbool.h>
 
-char version[] = "2.1.0";
+char version[] = "2.2.0";
 
 void updateLog() {
 	printf("BPM-BSC Official Update Log\n");
 	printf("Current Version: %s\n", version);
 	printf("-----------------------------\n");
-	printf("Update 2.1.0:\n");
-	printf("\tInstallation no longer requires login\n");
-	printf("\tPackages now installed from BPM-Repositories and not Bear-Package-Management\n");
+	printf("Update 2.2.0:\n");
+	printf("\tYou can now install third-party repositories. (e.g. not in the BPM-Repos Org)\n");
+	printf("\tChecks for valid and invalid links\n");
+	printf("\tExample: 'bpm install https://github.com/BizzyPythonBear/BearShellC");
+	printf("\t\tThis will install the package with no errors.");
+	printf("\tExample: 'bpm install https://websitethatdoesntexist.com'");
+	printf("\t\tThis will install the package with errors.");
 	return;
 }
 
@@ -34,7 +41,31 @@ void helpCom() {
 }
 
 void fullInstallPackage(char* package) {
+	return;
+}
 
+int check_url(char *url)
+{
+	CURL *curl;
+	CURLcode response;
+	curl = curl_easy_init();
+	if(curl) {
+		curl_easy_setopt(curl, CURLOPT_URL, url);
+		/* don't write output to stdout */
+		curl_easy_setopt(curl, CURLOPT_NOBODY, 1);
+		/* Perform the request */
+		response = curl_easy_perform(curl);
+		/* always cleanup */
+		curl_easy_cleanup(curl);
+	}
+	return (response == CURLE_OK) ? 1 : 0;
+}
+
+bool StartsWith(const char *a, const char *b) {
+   if(strncmp(a, b, strlen(b)) == 0) {
+	   return 1;
+   }
+   return 0;
 }
 
 int main(int argc, char *argv[]) {
@@ -51,29 +82,64 @@ int main(int argc, char *argv[]) {
 	char bla[70];
 	char bla2[70];
 	if (strcmp(option, op1) == 0) {
-		char* token = getenv("API");
-		snprintf(bla, sizeof(bla), "https://%s@github.com/BPM-Repositories/%s.git", token, packageToInstall);
-		snprintf(bla2, sizeof(bla), "/usr/local/bpm-packages/%s", packageToInstall);
-		char* args[] = {"git", "clone", bla, bla2, NULL};
-		if (strcmp(packageToInstall, dontDownload) == 0) {
-			printf("[E]: You can't download this repository!\n");
-			printf("[E]: The repo '%s' is an admin repo!\n", packageToInstall);
-			return 0;
-		} else {
-			pid_t pid;
-			if ((pid = fork()) < 0) {     /* fork a child process           */
-				printf("[E]: forking child process failed\n");
-				exit(1);
+		if (StartsWith(packageToInstall, "https://")) {
+			int result = check_url(packageToInstall);
+			if (result) {
+				char* token = getenv("API");
+				printf("Warning! You're downloading an unofficial BPM Repository! We are not responsible for damages!\n");
+				snprintf(bla, sizeof(bla), packageToInstall);
+				snprintf(bla2, sizeof(bla), "/usr/local/bpm-packages/%s", packageToInstall);
+				char* args[] = {"git", "clone", bla, bla2, NULL};
+				if (strcmp(packageToInstall, dontDownload) == 0) {
+					printf("[E]: You can't download this repository!\n");
+					printf("[E]: The repo '%s' is an admin repo!\n", packageToInstall);
+					return 0;
+				} else {
+					pid_t pid;
+					if ((pid = fork()) < 0) {     /* fork a child process           */
+						printf("[E]: forking child process failed\n");
+						exit(1);
+					}
+					else if (pid == 0) {          /* for the child process:         */
+						if (execvp("git", args) < 0) {     /* execute the command  */
+							printf("[E]: exec failed\n");
+							exit(1);
+						}
+					}
+					else {                                  /* for the parent:      */
+						wait(&pid);
+						return 0;
+					}
+				}
+			} else {
+				printf("The link you gave is not valid!\n");
+				return 0;
 			}
-			else if (pid == 0) {          /* for the child process:         */
-				if (execvp("git", args) < 0) {     /* execute the command  */
-					printf("[E]: exec failed\n");
+		} else {
+			char* token = getenv("API");
+			snprintf(bla, sizeof(bla), "https://%s@github.com/BPM-Repositories/%s.git", token, packageToInstall);
+			snprintf(bla2, sizeof(bla), "/usr/local/bpm-packages/%s", packageToInstall);
+			char* args[] = {"git", "clone", bla, bla2, NULL};
+			if (strcmp(packageToInstall, dontDownload) == 0) {
+				printf("[E]: You can't download this repository!\n");
+				printf("[E]: The repo '%s' is an admin repo!\n", packageToInstall);
+				return 0;
+			} else {
+				pid_t pid;
+				if ((pid = fork()) < 0) {     /* fork a child process           */
+					printf("[E]: forking child process failed\n");
 					exit(1);
 				}
-			}
-			else {                                  /* for the parent:      */
-				wait(&pid);
-				return 0;
+				else if (pid == 0) {          /* for the child process:         */
+					if (execvp("git", args) < 0) {     /* execute the command  */
+						printf("[E]: exec failed\n");
+						exit(1);
+					}
+				}
+				else {                                  /* for the parent:      */
+					wait(&pid);
+					return 0;
+				}
 			}
 		}
 	} else if (strcmp(option, op2) == 0) {
@@ -104,7 +170,7 @@ int main(int argc, char *argv[]) {
 	} else if (strcmp(option, op4) == 0) {
 		char* arg1 = argv[2];
 		if (strcmp(arg1, "--list") == 0) {
-			char* args[] = {"ls", "/usr/local/bpm-packages", NULL};
+			char* args[] = {"ls", "-al", "/usr/local/bpm-packages", NULL};
 			pid_t pid;
 			if ((pid = fork()) < 0) {
 				printf("[E]: forking child process failed\n");

@@ -1,12 +1,9 @@
-sudo gcc bpm-main.c -o bpm
-sudo mv bpm /usr/bin
 echo "Installing dependencies..."
+sudo apt-get install libcurl4-gnutls-dev
 
-#install github CLI
-#curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo gpg --dearmor -o /usr/share/keyrings/githubcli-archive-keyring.gpg
-#echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
-#sudo apt update -y
-#sudo apt install gh -y
+echo "Compiling..."
+sudo gcc bpm-main.c -o bpm -lcurl
+sudo mv bpm /usr/bin
 
 printf "\033c"
 printf "\033[0;92m"
