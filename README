@@ -13,6 +13,10 @@ correct integer. I have also added a license.
 man page: 'man bpm'
 
 
+Upcoming Features
+===================================================================
+MHS-FS Filesystem support
+
 ────────────────────────────────────┐
 Compiling, Installing, and Updating.│
 ────────────────────────────────────┘
