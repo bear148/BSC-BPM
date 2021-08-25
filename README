@@ -2,11 +2,32 @@ BSC-BPM
 ===================================================================
 Warning! BSC-BPM is not stable. Check the releases page for the latest stable versions.
 
+
+Update: 3.2.1
+===================================================================
+In the most recent update, I added a man page, more make commands, 
+commands that aren't install or remove now have two dashes. (e.g. 'bpm update-log' is now 'bpm --update-log'), 
+and you can now update (kind of) bpm, with the command 'bpm --update.' [Bug fix] Command failures and successes now return
+correct integer. I have also added a license.
+
+man page: 'man bpm'
+
+
+────────────────────────────────────┐
+Compiling, Installing, and Updating.│
+────────────────────────────────────┘
+
 Installation
 ===================================================================
-
 git clone https://github.com/BizzyPythonBear/BearShellC-BPM BSC-BPM
 cd BSC-BPM
-sudo make
-whereis bpm
+sudo make install
 bpm --help
+
+Updating
+===================================================================
+sudo make update
+
+Compiling (If you decided to make your own changes to the code)
+===================================================================
+sudo make compile
