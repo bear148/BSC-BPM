@@ -10,8 +10,8 @@ bpm <option> <argument> <- (Applies to most commands)
 bpm <option> <argument> <argument1> <- (Only applies to 'bpm install --link <link>')
 
 # VALID OPTIONS
-There are currently 6 options available.
-remove, install, --update-log, --version, --help, --package. (--package has 1 arg: '--list')
+There are currently 7 options available.
+remove, install, --update-log, --version, --help, --package, and --update. (--package has 1 arg: '--list')
 
 # DESCRIPTION
 bpm is a efficient and versatile package manager, made to be easy to use, and easily accessible. bpm is 
