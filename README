@@ -3,15 +3,17 @@ BSC-BPM
 Warning! BSC-BPM is not stable. Check the releases page for the latest stable versions.
 
 
-Update: 3.2.1
+Update: 4.2.1
 ===================================================================
-In the most recent update, I added a man page, more make commands, 
-commands that aren't install or remove now have two dashes. (e.g. 'bpm update-log' is now 'bpm --update-log'), 
-and you can now update (kind of) bpm, with the command 'bpm --update.' [Bug fix] Command failures and successes now return
-correct integer. I have also added a license.
+In the most recent update, I made it so that if you install a package that has an 'install.sh' file, 
+you can compile it and it will run the .sh file.
 
-man page: 'man bpm'
+Updating is now 90% done! It does require a separate package though. To install run 'bpm install update-util' and then 'bpm --compile update-util'.
+Then, you can run 'bpm-update'
 
+Manual update
+
+compile: 'bpm --compile <package>'
 
 Upcoming Features
 ===================================================================

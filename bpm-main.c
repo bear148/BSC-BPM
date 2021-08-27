@@ -7,20 +7,35 @@
 #include <curl/curl.h>
 #include <curl/easy.h>
 #include <stdbool.h>
+#include <dirent.h>
+#include <errno.h>
 
-char version[] = "3.2.1";
+char version[] = "4.2.1";
 
 void updateLog() {
 	printf("BPM-BSC Official Update Log\n");
 	printf("Current Version: %s\n", version);
 	printf("-----------------------------\n");
-	printf("Update 3.2.1:\n");
-	printf("\tInstallation of third-party repositories now is used like this: 'bpm install --link <link>'\n");
-	printf("\tMan page added. 'man bpm'\n");
-	printf("\tAll arguments other than 'install' and 'remove' have two dashes before! For example, 'bpm update-log' is now 'bpm --update-log'\n");
-	printf("\t--update Option\n");
-	printf("\t[Bug Fix] When a command executes, it now either returns 1 or 0.\n");
+	printf("Update 4.2.1:\n");
+	printf("\tInstallation of packages that include an 'install.sh' file is now made easier: You can do 'bpm --compile <packageName>' to run the install.sh file in that package.\n");
+	printf("\t'bpm --update' now works: gives you instructions on how to update with the update-util\n");
+	printf("\tManual now gives info on all commands and usage for them. (!) KEEP IN MIND! IN THE MAN PAGE EVERY COMMAND THAT HAS ONLY ONE DASH NEEDS TWO BEFORE IT!\n");
 	return;
+}
+
+void check(char* direct) {
+	DIR* dir = opendir(direct);
+	if (dir) {
+		/* Directory exists. */
+		closedir(dir);
+		return;
+	} else if (ENOENT == errno) {
+		printf("[E]: Package doesn't exist!");
+		return;
+	} else {
+		printf("[E]: Opendir() failed");
+		return;
+	}
 }
 
 void helpCom() {
@@ -35,8 +50,10 @@ void helpCom() {
 	printf("\t\t--help: 	  shows list of working commands\n");
 	printf("\t\t--package: 	  shows list of working commands\n");
 	printf("\t\t--update:     updates bpm\n");
+	printf("\t\t--compile:    compiles package (if package has install.sh)\n");
 	printf("\t\tArguments:\n");
-	printf("\t\t\tpackage has 1 argument, '--list'\n");
+	printf("\t\t\t--package has 1 argument, '--list'\n");
+	printf("\t\t\t--compile has 1 argument, '<packageToCompile>'\n");
 	printf("\tCommands with 4 or more Args:\n");
 	printf("\t\tUsage: bpm <option> <arg> <arg1>\n");
 	printf("\t\t\tOptions: (Options that have 4 argument compatability)\n");
@@ -89,10 +106,13 @@ int main(int argc, char *argv[]) {
 		char op5[] = "--update-log";
 		char op6[] = "--help";
 		char op7[] = "--update";
+		char op8[] = "--compile";
 		char arg1[] = "--link";
 		char dontDownload[] = "BPM-Repositories";
+		char update_util_download[] = "update-util";
 		char bla[70];
 		char bla2[70];
+
 		if (strcmp(option, op1) == 0) {
 			if (strcmp(argv[2], arg1) == 0) {
 				char* linkToInstall = argv[3];
@@ -215,8 +235,66 @@ int main(int argc, char *argv[]) {
 			helpCom();
 			return 1;
 		} else if (strcmp(option, op7) == 0) {
-			printf("[W]: To update, please do 'make update' in the directory of BSC-BPM\n");
+			printf("[O]: Currently, the only option to update bpm is manually, or using the update utility.\n");
+			printf("[O]: You can get this util by doing 'bpm install update-util'\n");
 			return 1;
+		} else if (strcmp(option, op8) == 0) {
+			if (argc == 3) {
+				char* packageToCompile = argv[2];
+				char bla3[70];
+				snprintf(bla3, sizeof(bla3), "/usr/local/bpm-packages/%s/", packageToCompile);
+				DIR* dir = opendir(bla3);
+				if (dir) {
+					char* PWD = getenv("PWD");
+					char bla[70];
+					snprintf(bla, sizeof(bla), "/usr/local/bpm-packages/%s/install.sh", packageToCompile);
+					char bla2[70];
+					snprintf(bla2, sizeof(bla2), "/usr/local/bpm-packages/%s/install.sh", packageToCompile);
+					char* args[] = {"sudo", "chmod", "+x", bla, NULL};
+					pid_t pid;
+					if ((pid = fork()) < 0) {
+						printf("[E]: forking child process failed\n");
+						exit(1);
+					}
+					else if (pid == 0) {
+						if (execvp("sudo", args) < 0) {
+							printf("[E]: exec failed\n");
+							exit(1);
+						}
+					}
+					else {
+						wait(&pid);
+					}
+
+					char* args1[] = {"sudo", "sh", bla, NULL};
+					pid_t pid1;
+					if ((pid1 = fork()) < 0) {
+						printf("[E]: forking child process failed\n");
+						exit(1);
+					}
+					else if (pid1 == 0) {
+						if (execvp("sudo", args1) < 0) {
+							printf("[E]: exec failed\n");
+							exit(1);
+						}
+					}
+					else {
+						wait(&pid1);
+						return 1;
+					}
+					closedir(dir);
+					return 1;
+				} else if (ENOENT == errno) {
+					printf("[E]: Package doesn't exist!\n");
+					return 0;
+				} else {
+					printf("[E]: Opendir() failed");
+					return 0;
+				}
+			} else if (argc == 2) {
+				printf("[E]: Only two arguments given! --compile requires a package to be compiled!\n");
+				return 0;
+			}
 		} else {
 			printf("[E]: Not a bpm command!\n");
 		}
